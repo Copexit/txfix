@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --muted: #71717a;
+  --card-bg: #18181b;
+  --card-border: #27272a;
+  --bitcoin: #f7931a;
+  --bitcoin-hover: #e8850f;
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-bitcoin: var(--bitcoin);
+  --color-bitcoin-hover: var(--bitcoin-hover);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--bitcoin);
+  color: #000;
+}

@@ -7,14 +7,16 @@ import { TxInput } from "@/components/TxInput";
 import { DiagnosticSequence } from "@/components/DiagnosticSequence";
 import { VerdictCard } from "@/components/VerdictCard";
 import { AcceleratorFallback } from "@/components/AcceleratorFallback";
-import { CostComparison } from "@/components/CostComparison";
-import { FixFlow } from "@/components/FixFlow";
-import { BroadcastInput } from "@/components/BroadcastInput";
+import { WalletSelector } from "@/components/WalletSelector";
+import { WalletGuide } from "@/components/WalletGuide";
 import { LiveTracker } from "@/components/LiveTracker";
 import { RescueReceipt } from "@/components/RescueReceipt";
 import { Button } from "@/components/ui/Button";
 import { TxFixError } from "@/lib/errors";
 import { truncateTxid } from "@/lib/bitcoin/format";
+import { getWalletById } from "@/lib/wallets/data";
+import { resolveGuide } from "@/lib/wallets/resolveGuide";
+import type { ResolvedGuide } from "@/lib/wallets/types";
 
 type FixMethod = "RBF" | "CPFP";
 
@@ -22,12 +24,17 @@ export default function Home() {
   const { txid, setTxid } = useUrlState();
   const diagnosis = useDiagnosis(txid);
   const [fixMethod, setFixMethod] = useState<FixMethod | null>(null);
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+  const [resolvedGuideState, setResolvedGuideState] =
+    useState<ResolvedGuide | null>(null);
   const [broadcastedTxid, setBroadcastedTxid] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
 
   const handleSubmit = useCallback(
     (newTxid: string) => {
       setFixMethod(null);
+      setSelectedWalletId(null);
+      setResolvedGuideState(null);
       setBroadcastedTxid(null);
       setConfirmed(false);
       setTxid(newTxid);
@@ -37,11 +44,50 @@ export default function Home() {
 
   const handleFix = useCallback((method: FixMethod) => {
     setFixMethod(method);
+    // Go to wallet selection (not directly to FixFlow)
+    setSelectedWalletId(null);
+    setResolvedGuideState(null);
+  }, []);
+
+  const handleWalletSelect = useCallback(
+    (walletId: string) => {
+      setSelectedWalletId(walletId);
+      const wallet = getWalletById(walletId);
+      if (wallet && fixMethod && diagnosis.verdict) {
+        setResolvedGuideState(
+          resolveGuide(wallet, fixMethod, diagnosis.verdict),
+        );
+      }
+    },
+    [fixMethod, diagnosis.verdict],
+  );
+
+  const handleChangeWallet = useCallback(() => {
+    setSelectedWalletId(null);
+    setResolvedGuideState(null);
   }, []);
 
   const handleCancelFix = useCallback(() => {
     setFixMethod(null);
+    setSelectedWalletId(null);
+    setResolvedGuideState(null);
   }, []);
+
+  const handleSwitchMethod = useCallback(
+    (method: FixMethod) => {
+      setFixMethod(method);
+      // Re-resolve guide for the same wallet but different method
+      if (selectedWalletId && diagnosis.verdict) {
+        const wallet = getWalletById(selectedWalletId);
+        if (wallet) {
+          setResolvedGuideState(
+            resolveGuide(wallet, method, diagnosis.verdict),
+          );
+        }
+      }
+    },
+    [selectedWalletId, diagnosis.verdict],
+  );
 
   const handleBroadcasted = useCallback((newTxid: string) => {
     setBroadcastedTxid(newTxid);
@@ -53,6 +99,8 @@ export default function Home() {
 
   const handleReset = useCallback(() => {
     setFixMethod(null);
+    setSelectedWalletId(null);
+    setResolvedGuideState(null);
     setBroadcastedTxid(null);
     setConfirmed(false);
     setTxid(null);
@@ -68,15 +116,17 @@ export default function Home() {
     diagnosis.verdict !== null &&
     !fixMethod &&
     !broadcastedTxid;
-  const showFix = fixMethod !== null && !broadcastedTxid;
+  const showWalletSelect =
+    fixMethod !== null &&
+    selectedWalletId === null &&
+    !broadcastedTxid;
+  const showWalletGuide =
+    fixMethod !== null &&
+    resolvedGuideState !== null &&
+    !broadcastedTxid;
   const showTracker = broadcastedTxid !== null && !confirmed;
   const showReceipt = confirmed && broadcastedTxid !== null;
   const showError = diagnosis.phase === "error";
-
-  const primaryRec = diagnosis.verdict?.recommendations.find(
-    (r) => r.isPrimary,
-  );
-  const primaryCostUsd = primaryRec?.costUsd;
 
   return (
     <div
@@ -91,7 +141,7 @@ export default function Home() {
               <span className="text-bitcoin">Fix it.</span>
             </h1>
             <p className="text-muted text-lg max-w-md mx-auto">
-              Free diagnosis. 30-second rescue. No keys required.
+              Free diagnosis. 3 clicks to unstick. No keys required.
             </p>
           </div>
           <TxInput onSubmit={handleSubmit} isLoading={isLoading} />
@@ -120,49 +170,57 @@ export default function Home() {
             </p>
           )}
 
-          {/* Diagnostic steps — hide once verdict is ready */}
-          {showDiagnosis && !showVerdict && !showFix && !showTracker && !showReceipt && (
-            <DiagnosticSequence
-              steps={diagnosis.steps}
-              isRunning={isLoading}
-            />
-          )}
+          {/* Diagnostic steps -hide once verdict is ready */}
+          {showDiagnosis &&
+            !showVerdict &&
+            !showWalletSelect &&
+            !showWalletGuide &&
+            !showTracker &&
+            !showReceipt && (
+              <DiagnosticSequence
+                steps={diagnosis.steps}
+                isRunning={isLoading}
+              />
+            )}
 
           {/* Verdict */}
           {showVerdict && diagnosis.verdict && (
             <div className="space-y-3">
               <VerdictCard verdict={diagnosis.verdict} onFix={handleFix} />
-              {primaryCostUsd !== undefined && primaryCostUsd > 0 && (
-                <CostComparison
-                  rescueCostUsd={primaryCostUsd}
-                  method={primaryRec!.label}
-                />
-              )}
               {diagnosis.verdict.showAcceleratorFallback && txid && (
                 <AcceleratorFallback txid={txid} />
               )}
             </div>
           )}
 
-          {/* Fix Flow (PSBT construction + delivery) */}
-          {showFix &&
+          {/* Wallet Selection */}
+          {showWalletSelect && (
+            <WalletSelector
+              onSelect={handleWalletSelect}
+              onCancel={handleCancelFix}
+            />
+          )}
+
+          {/* Wallet Guide */}
+          {showWalletGuide &&
+            resolvedGuideState &&
             fixMethod &&
             diagnosis.txData &&
             diagnosis.rawTxHex &&
-            diagnosis.verdict && (
-              <div className="space-y-4">
-                <FixFlow
-                  method={fixMethod}
-                  txData={diagnosis.txData}
-                  txHex={diagnosis.rawTxHex}
-                  verdict={diagnosis.verdict}
-                  cpfpCandidates={diagnosis.cpfpCandidates}
-                  onBroadcastReady={() => {}}
-                  onCancel={handleCancelFix}
-                />
-                {/* Broadcast section after PSBT delivery */}
-                <BroadcastInput onBroadcasted={handleBroadcasted} />
-              </div>
+            diagnosis.verdict &&
+            txid && (
+              <WalletGuide
+                guide={resolvedGuideState}
+                verdict={diagnosis.verdict}
+                txData={diagnosis.txData}
+                txHex={diagnosis.rawTxHex}
+                cpfpCandidates={diagnosis.cpfpCandidates}
+                txid={txid}
+                onBroadcasted={handleBroadcasted}
+                onCancel={handleCancelFix}
+                onChangeWallet={handleChangeWallet}
+                onSwitchMethod={handleSwitchMethod}
+              />
             )}
 
           {/* Live Tracker */}

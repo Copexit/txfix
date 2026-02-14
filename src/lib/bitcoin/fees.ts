@@ -71,6 +71,6 @@ export function estimateBlocksToConfirm(
     if (feeRate >= minFee) return i + 1;
   }
 
-  // Beyond projected blocks — very stuck
+  // Beyond projected blocks -very stuck
   return mempoolBlocks.length + 6;
 }

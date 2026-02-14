@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://txfix.it/sitemap.xml
+Sitemap: https://txfix.click/sitemap.xml

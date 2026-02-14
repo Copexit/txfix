@@ -19,6 +19,8 @@ interface FixFlowProps {
   cpfpCandidates: CpfpCandidate[];
   onBroadcastReady: (signedTxHex?: string) => void;
   onCancel: () => void;
+  /** Filter which PSBT delivery tabs to show */
+  visibleTabs?: ("qr" | "file" | "hex")[];
 }
 
 export function FixFlow({
@@ -28,6 +30,7 @@ export function FixFlow({
   verdict,
   cpfpCandidates,
   onCancel,
+  visibleTabs,
 }: FixFlowProps) {
   const { network } = useNetwork();
   const psbtBuilder = usePsbtBuilder();
@@ -121,6 +124,7 @@ export function FixFlow({
           fee={psbtBuilder.psbt.fee}
           method={method}
           targetFeeRate={verdict.targetFeeRate}
+          visibleTabs={visibleTabs}
         />
         <button
           onClick={onCancel}

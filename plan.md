@@ -4,7 +4,7 @@
 
 TxFix is the first diagnostic-first rescue tool for stuck Bitcoin transactions. Every existing tool (accelerators, wallet bump buttons) skips diagnosis and jumps to the most expensive fix. TxFix tells you what's actually wrong for free, then walks you to the cheapest fix in 3 clicks.
 
-**V1 ships completely free** — no payment gating. Payments (phoenixd Lightning) will be added in V1.1 once there's traction. The app is a **static site** deployed to **GitHub Pages** — no backend, no database, pure frontend + public Bitcoin APIs.
+**V1 ships completely free** — no payment gating, no monetization. The app is a **static site** deployed to **GitHub Pages** — no backend, no database, pure frontend + public Bitcoin APIs.
 
 ### Why GitHub Pages Works
 
@@ -78,7 +78,8 @@ src/
 │   ├── DiagnosticSequence.tsx     # Animated terminal-style step list
 │   ├── DiagnosticStep.tsx         # Single check line (icon + label + detail)
 │   ├── VerdictCard.tsx            # STUCK/SLOW/FINE + recommendations
-│   ├── CostComparison.tsx         # RBF vs CPFP vs accelerator costs
+│   ├── WalletSelector.tsx          # Wallet picker with search + filtering
+│   ├── WalletGuide.tsx            # Step-by-step wallet-specific instructions
 │   ├── FixFlow.tsx                # Orchestrates PSBT build + delivery
 │   ├── CpfpAddressInput.tsx       # Destination address input for CPFP
 │   ├── PsbtDelivery.tsx           # Tabbed: QR / Download / Hex
@@ -117,6 +118,11 @@ src/
 │   │   ├── constants.ts           # DUST_LIMIT, MAX_SEQUENCE, etc.
 │   │   ├── fees.ts                # Fee calculation helpers (RBF cost, CPFP cost)
 │   │   └── format.ts              # Sats formatting, truncate TXID, etc.
+│   │
+│   ├── wallets/
+│   │   ├── types.ts               # WalletInfo, ResolvedGuide, GuideStep types
+│   │   ├── data.ts                # Static wallet data (11+ wallets)
+│   │   └── resolveGuide.ts        # Guide resolution (native/psbt/unsupported)
 │   │
 │   └── errors.ts                  # TxFixError class + ErrorCode enum
 │
@@ -441,11 +447,11 @@ Note: No `crypto-browserify` or `stream-browserify` needed — bitcoinjs-lib v7 
 ### State Machine (page.tsx)
 
 ```
-idle → (paste TXID) → diagnosing → complete → (click Fix) → building →
-  psbt-ready → (user signs + broadcasts) → tracking → confirmed → receipt
+idle → (paste TXID) → diagnosing → complete → (click Fix) → wallet-select →
+  (choose wallet) → wallet-guide → (done) → tracking → confirmed → receipt
 ```
 
-Views: `input | diagnosis | verdict | fix | tracker | receipt`
+Views: `input | diagnosis | verdict | wallet-select | wallet-guide | tracker | receipt`
 
 Driven by `useDiagnosis` phase + local UI state. `useUrlState` syncs TXID and network with URL for shareability.
 

@@ -17,16 +17,45 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TxFix — Fix Stuck Bitcoin Transactions",
+  metadataBase: new URL("https://txfix.click"),
+  title: "TxFix - Unstick Bitcoin Transactions in 3 Clicks",
   description:
-    "Free Bitcoin transaction diagnosis. 30-second rescue. No keys required. Paste a TXID, get a diagnosis, fix it in 3 clicks.",
+    "Stuck Bitcoin transaction? Diagnose and fix it in 3 clicks - free. RBF fee bump, CPFP, or accelerator with step-by-step wallet guides. No keys required.",
+  keywords: [
+    "stuck bitcoin transaction",
+    "fix bitcoin transaction",
+    "unconfirmed bitcoin transaction",
+    "bitcoin transaction not confirming",
+    "speed up bitcoin transaction",
+    "bitcoin fee bump",
+    "RBF bitcoin",
+    "CPFP bitcoin",
+    "bitcoin transaction accelerator free",
+    "bitcoin mempool",
+  ],
+  alternates: {
+    canonical: "https://txfix.click",
+  },
   openGraph: {
-    title: "TxFix — Fix Stuck Bitcoin Transactions",
+    title: "TxFix - Unstick Bitcoin Transactions in 3 Clicks",
     description:
-      "Free Bitcoin transaction diagnosis. 30-second rescue. No keys required.",
+      "Stuck Bitcoin transaction? Free diagnosis. 3 clicks to unstick. No keys required.",
+    url: "https://txfix.click",
     siteName: "TxFix",
     type: "website",
+    locale: "en_US",
   },
+  twitter: {
+    card: "summary",
+    title: "TxFix - Unstick Bitcoin Transactions in 3 Clicks",
+    description:
+      "Stuck Bitcoin transaction? Free diagnosis. 3 clicks to unstick. No keys required.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  applicationName: "TxFix",
 };
 
 export default function RootLayout({
@@ -39,6 +68,27 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "TxFix",
+              url: "https://txfix.click",
+              description:
+                "Free Bitcoin transaction rescue tool. Diagnose stuck transactions and fix them in 3 clicks with RBF or CPFP.",
+              applicationCategory: "FinanceApplication",
+              operatingSystem: "Any",
+              browserRequirements: "Requires a modern web browser",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+              },
+            }),
+          }}
+        />
         <Suspense fallback={null}>
           <NetworkProvider>
             <Header />
@@ -46,6 +96,13 @@ export default function RootLayout({
             <Footer />
           </NetworkProvider>
         </Suspense>
+        {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN && (
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={`{"token":"${process.env.NEXT_PUBLIC_CF_BEACON_TOKEN}"}`}
+          />
+        )}
       </body>
     </html>
   );

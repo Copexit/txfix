@@ -13,7 +13,7 @@ export function PsbtHexDisplay({ psbtHex }: PsbtHexDisplayProps) {
         <span className="text-xs text-muted">Raw PSBT hex</span>
         <CopyButton text={psbtHex} label="Copy hex" />
       </div>
-      <div className="bg-[#111113] border border-card-border rounded-lg p-3 max-h-40 overflow-y-auto">
+      <div className="bg-surface-inset border border-card-border rounded-lg p-3 max-h-40 overflow-y-auto">
         <p className="font-mono text-xs text-muted break-all leading-relaxed select-all">
           {psbtHex}
         </p>

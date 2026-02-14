@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { MempoolTransaction } from "@/lib/api/types";
 import type { CpfpCandidate } from "@/lib/diagnosis/types";
 import type { BitcoinNetwork } from "@/lib/bitcoin/networks";
@@ -49,13 +49,6 @@ export function usePsbtBuilder(): UsePsbtBuilderReturn {
   const [psbt, setPsbt] = useState<PsbtResult | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
 
   const reset = useCallback(() => {
     setPsbt(null);
@@ -79,7 +72,6 @@ export function usePsbtBuilder(): UsePsbtBuilderReturn {
           targetFeeRate: params.targetFeeRate,
           network: getBitcoinJsNetwork(params.network),
         });
-        if (!mountedRef.current) return;
         setPsbt({
           psbtBase64: result.psbtBase64,
           psbtHex: result.psbtHex,
@@ -87,10 +79,9 @@ export function usePsbtBuilder(): UsePsbtBuilderReturn {
           method: "RBF",
         });
       } catch (err) {
-        if (!mountedRef.current) return;
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        if (mountedRef.current) setIsBuilding(false);
+        setIsBuilding(false);
       }
     },
     [],
@@ -115,7 +106,6 @@ export function usePsbtBuilder(): UsePsbtBuilderReturn {
           destinationAddress: params.destinationAddress,
           network: getBitcoinJsNetwork(params.network),
         });
-        if (!mountedRef.current) return;
         setPsbt({
           psbtBase64: result.psbtBase64,
           psbtHex: result.psbtHex,
@@ -123,10 +113,9 @@ export function usePsbtBuilder(): UsePsbtBuilderReturn {
           method: "CPFP",
         });
       } catch (err) {
-        if (!mountedRef.current) return;
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        if (mountedRef.current) setIsBuilding(false);
+        setIsBuilding(false);
       }
     },
     [],

@@ -3,7 +3,6 @@
 import { Card } from "./ui/Card";
 import { CopyButton } from "./ui/CopyButton";
 import { truncateTxid, formatSats, satsToDollars } from "@/lib/bitcoin/format";
-import { ACCELERATOR_COST_USD } from "@/lib/bitcoin/constants";
 import { useNetwork } from "@/context/NetworkContext";
 import { motion } from "motion/react";
 
@@ -23,23 +22,15 @@ export function RescueReceipt({
   btcPrice,
 }: RescueReceiptProps) {
   const { config } = useNetwork();
-  const costUsd = (feePaidSats / 100_000_000) * btcPrice;
-  const savings = ACCELERATOR_COST_USD - costUsd;
-  const hasSavings = savings > 0;
 
   const summaryText = [
     `Rescued by TxFix`,
     `Method: ${method}`,
     `Fee paid: ${formatSats(feePaidSats)} (${satsToDollars(feePaidSats, btcPrice)})`,
-    hasSavings
-      ? `Saved ~$${savings.toFixed(2)} vs. accelerator`
-      : "",
     `Original: ${originalTxid}`,
     `Replacement: ${replacementTxid}`,
-    `https://txfix.it`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `https://txfix.click`,
+  ].join("\n");
 
   return (
     <motion.div
@@ -63,11 +54,6 @@ export function RescueReceipt({
             &#10003;
           </motion.div>
           <h3 className="font-bold text-lg">Transaction Rescued</h3>
-          {hasSavings && (
-            <p className="text-success font-semibold">
-              Saved ~${savings.toFixed(2)} vs. accelerator
-            </p>
-          )}
         </div>
 
         <div className="space-y-3 text-sm">

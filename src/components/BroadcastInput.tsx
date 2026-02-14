@@ -45,7 +45,7 @@ export function BroadcastInput({ onBroadcasted }: BroadcastInputProps) {
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 bg-[#111113] rounded-lg p-1">
+      <div className="flex gap-1 bg-surface-inset rounded-lg p-1">
         <button
           onClick={() => {
             setMode("broadcast");
@@ -87,7 +87,7 @@ export function BroadcastInput({ onBroadcasted }: BroadcastInputProps) {
             spellCheck={false}
             autoComplete="off"
             rows={3}
-            className="w-full bg-[#111113] border border-card-border rounded-lg px-3 py-2
+            className="w-full bg-surface-inset border border-card-border rounded-lg px-3 py-2
               font-mono text-sm text-foreground placeholder:text-muted/50
               focus:outline-none focus:border-bitcoin transition-colors resize-none"
           />
@@ -116,12 +116,12 @@ export function BroadcastInput({ onBroadcasted }: BroadcastInputProps) {
             placeholder="Paste replacement TXID..."
             spellCheck={false}
             autoComplete="off"
-            className="w-full bg-[#111113] border border-card-border rounded-lg px-3 py-2
+            className="w-full bg-surface-inset border border-card-border rounded-lg px-3 py-2
               font-mono text-sm text-foreground placeholder:text-muted/50
               focus:outline-none focus:border-bitcoin transition-colors"
           />
           {input.trim() && !isValidTxid(input.trim()) && (
-            <p className="text-danger text-xs">Invalid TXID — must be a 64-character hex string</p>
+            <p className="text-danger text-xs">Invalid TXID -must be a 64-character hex string</p>
           )}
           <Button
             onClick={handleTxidSubmit}

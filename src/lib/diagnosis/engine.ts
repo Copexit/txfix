@@ -13,7 +13,6 @@ import {
   estimateBlocksToConfirm,
 } from "@/lib/bitcoin/fees";
 import { formatFeeRate, formatBlockEstimate, satsToUsd } from "@/lib/bitcoin/format";
-import { ACCELERATOR_COST_USD } from "@/lib/bitcoin/constants";
 
 export interface EngineResult {
   verdict: Verdict;
@@ -178,8 +177,7 @@ function buildVerdict(
       method: "ACCELERATOR",
       label: "Use Accelerator",
       isPrimary: true,
-      costSats: Math.round((ACCELERATOR_COST_USD / btcPrice) * 100_000_000),
-      costUsd: ACCELERATOR_COST_USD,
+      costSats: 0,
       estimatedTime: "~10-30 min",
       targetFeeRate: 0,
     });
@@ -201,11 +199,11 @@ function buildVerdict(
 function buildHeadline(severity: Verdict["severity"], blocks: number): string {
   switch (severity) {
     case "STUCK":
-      return `Stuck \u2014 ${formatBlockEstimate(blocks)} at current fee rate`;
+      return `Stuck - ${formatBlockEstimate(blocks)} at current fee rate`;
     case "SLOW":
-      return `Slow \u2014 ${formatBlockEstimate(blocks)} at current fee rate`;
+      return `Slow - ${formatBlockEstimate(blocks)} at current fee rate`;
     case "FINE":
-      return "Looking good \u2014 should confirm soon";
+      return "Looking good - should confirm soon";
     case "CONFIRMED":
       return "Already confirmed";
   }

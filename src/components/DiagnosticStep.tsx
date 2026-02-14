@@ -29,7 +29,7 @@ export function DiagnosticStep({ step }: DiagnosticStepProps) {
       <span className="text-sm leading-5">
         <span className="text-foreground">{step.label}</span>
         {step.detail && (
-          <span className="text-muted"> &mdash; {step.detail}</span>
+          <span className="text-muted"> - {step.detail}</span>
         )}
       </span>
     </motion.div>

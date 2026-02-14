@@ -24,5 +24,3 @@ export const ESTIMATED_CHILD_VSIZES: Record<string, number> = {
 
 export const DEFAULT_CHILD_VSIZE = 150;
 
-/** Accelerator cost estimate for comparison (in USD). Approximate. May become outdated. */
-export const ACCELERATOR_COST_USD = 40;

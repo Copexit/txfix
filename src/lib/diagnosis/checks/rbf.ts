@@ -6,7 +6,7 @@ export function checkRbfSignaling(tx: MempoolTransaction): CheckResult {
     return {
       id: "rbf-signaling",
       label: "No inputs",
-      detail: "Transaction has no inputs — cannot determine RBF signaling",
+      detail: "Transaction has no inputs -cannot determine RBF signaling",
       status: "warn",
       icon: "\u26A0",
     };
@@ -34,7 +34,7 @@ export function checkRbfSignaling(tx: MempoolTransaction): CheckResult {
     id: "rbf-signaling",
     label: "RBF not explicitly signaled",
     detail: allMaxSequence
-      ? "All inputs at max sequence \u2014 full-RBF may still work (most nodes relay since Core 28)"
+      ? "All inputs at max sequence - full-RBF may still work (most nodes relay since Core 28)"
       : `sequence: 0x${Math.min(...tx.vin.map((v) => v.sequence)).toString(16).padStart(8, "0")}`,
     status: "warn",
     icon: "\u26A0",

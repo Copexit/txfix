@@ -20,7 +20,7 @@ export function TxInput({ onSubmit, isLoading, compact = false }: TxInputProps) 
       const trimmed = raw.trim().toLowerCase();
       if (!trimmed) return;
       if (!isValidTxid(trimmed)) {
-        setError("Invalid TXID — must be a 64-character hex string");
+        setError("Invalid TXID - must be a 64-character hex string");
         return;
       }
       setError(null);

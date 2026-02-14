@@ -29,7 +29,7 @@ export function CpfpAddressInput({
         onChange={(e) => setAddress(e.target.value)}
         spellCheck={false}
         autoComplete="off"
-        className="w-full bg-[#111113] border border-card-border rounded-lg px-3 py-2
+        className="w-full bg-surface-inset border border-card-border rounded-lg px-3 py-2
           font-mono text-sm text-foreground placeholder:text-muted/50
           focus:outline-none focus:border-bitcoin transition-colors"
       />

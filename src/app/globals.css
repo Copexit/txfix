@@ -6,6 +6,7 @@
   --muted: #71717a;
   --card-bg: #18181b;
   --card-border: #27272a;
+  --surface-inset: #111113;
   --bitcoin: #f7931a;
   --bitcoin-hover: #e8850f;
   --success: #22c55e;
@@ -20,6 +21,7 @@
   --color-muted: var(--muted);
   --color-card-bg: var(--card-bg);
   --color-card-border: var(--card-border);
+  --color-surface-inset: var(--surface-inset);
   --color-bitcoin: var(--bitcoin);
   --color-bitcoin-hover: var(--bitcoin-hover);
   --color-success: var(--success);

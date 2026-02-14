@@ -13,6 +13,8 @@ interface PsbtDeliveryProps {
   fee: number;
   method: "RBF" | "CPFP";
   targetFeeRate?: number;
+  /** If provided, only show these tabs. Defaults to all tabs. */
+  visibleTabs?: Tab[];
 }
 
 type Tab = "qr" | "file" | "hex";
@@ -29,8 +31,12 @@ export function PsbtDelivery({
   fee,
   method,
   targetFeeRate,
+  visibleTabs,
 }: PsbtDeliveryProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("qr");
+  const tabs = visibleTabs?.length
+    ? TABS.filter((t) => visibleTabs.includes(t.value))
+    : TABS;
+  const [activeTab, setActiveTab] = useState<Tab>(tabs[0]?.value ?? "qr");
 
   return (
     <Card className="space-y-4">
@@ -45,8 +51,8 @@ export function PsbtDelivery({
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-[#111113] rounded-lg p-1">
-        {TABS.map((tab) => (
+      <div className="flex gap-1 bg-surface-inset rounded-lg p-1">
+        {tabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}

@@ -1,14 +1,17 @@
-import type { MempoolTransaction, MempoolBlock } from "@/lib/api/types";
+import type { MempoolTransaction, MempoolBlock, MempoolInfo } from "@/lib/api/types";
 import type { CheckResult } from "../types";
-import { getEffectiveFeeRate, estimateBlocksToConfirm } from "@/lib/bitcoin/fees";
+import { getEffectiveFeeRate, estimateBlocksToConfirm, estimateBlocksFromPosition } from "@/lib/bitcoin/fees";
 import { formatBlockEstimate } from "@/lib/bitcoin/format";
 
 export function checkWaitEstimate(
   tx: MempoolTransaction,
   mempoolBlocks: MempoolBlock[],
+  mempoolInfo: MempoolInfo,
 ): CheckResult {
   const feeRate = getEffectiveFeeRate(tx);
-  const blocks = estimateBlocksToConfirm(feeRate, mempoolBlocks);
+  const blocksByFee = estimateBlocksToConfirm(feeRate, mempoolBlocks);
+  const blocksByPosition = estimateBlocksFromPosition(feeRate, mempoolInfo);
+  const blocks = Math.max(blocksByFee, blocksByPosition);
   const timeEstimate = formatBlockEstimate(blocks);
 
   if (blocks <= 1) {

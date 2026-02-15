@@ -11,6 +11,7 @@ import {
   calculateRbfCost,
   calculateCpfpCost,
   estimateBlocksToConfirm,
+  estimateBlocksFromPosition,
 } from "@/lib/bitcoin/fees";
 import { formatFeeRate, formatBlockEstimate, satsToUsd } from "@/lib/bitcoin/format";
 
@@ -76,7 +77,7 @@ export async function* runDiagnosis(
   yield checkMempoolPosition(tx, mempoolInfo);
 
   // ── 6. Wait estimate ───────────────────────────────────────────────────
-  yield checkWaitEstimate(tx, mempoolBlocks);
+  yield checkWaitEstimate(tx, mempoolBlocks, mempoolInfo);
 
   // ── Build verdict ──────────────────────────────────────────────────────
   const verdict = buildVerdict(data, cpfpResult.candidates);
@@ -114,7 +115,9 @@ function buildVerdict(
   const btcPrice = rawBtcPrice > 0 ? rawBtcPrice : 100_000;
   const currentFeeRate = getEffectiveFeeRate(tx);
   const targetFeeRate = fees.fastestFee;
-  const blocks = estimateBlocksToConfirm(currentFeeRate, mempoolBlocks);
+  const blocksByFee = estimateBlocksToConfirm(currentFeeRate, mempoolBlocks);
+  const blocksByPosition = estimateBlocksFromPosition(currentFeeRate, data.mempoolInfo);
+  const blocks = Math.max(blocksByFee, blocksByPosition);
 
   // Determine severity
   let severity: Verdict["severity"];

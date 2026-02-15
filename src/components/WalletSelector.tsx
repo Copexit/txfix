@@ -7,6 +7,7 @@ import { WALLETS } from "@/lib/wallets/data";
 import type { WalletInfo, Platform } from "@/lib/wallets/types";
 import { Card } from "./ui/Card";
 import { Badge } from "./ui/Badge";
+import { WalletAvatar } from "./ui/WalletAvatar";
 
 interface WalletSelectorProps {
   onSelect: (walletId: string) => void;
@@ -34,10 +35,6 @@ const walletColors: Record<string, string> = {
   muun: "bg-indigo-500/20 text-indigo-400",
   green: "bg-teal-500/20 text-teal-400",
 };
-
-function getWalletInitial(wallet: WalletInfo): string {
-  return wallet.name.charAt(0).toUpperCase();
-}
 
 function getWalletColor(walletId: string): string {
   return walletColors[walletId] ?? "bg-bitcoin/15 text-bitcoin";
@@ -293,9 +290,11 @@ function WalletCard({
         ${isFocused ? "ring-2 ring-bitcoin/30 border-bitcoin" : "border-card-border"}`}
     >
       <div className="flex items-start gap-3">
-        <div className={`w-8 h-8 rounded-full ${colorClass} text-sm font-bold flex items-center justify-center shrink-0`}>
-          {getWalletInitial(wallet)}
-        </div>
+        <WalletAvatar
+          walletId={wallet.id}
+          walletName={wallet.name}
+          fallbackColorClass={colorClass}
+        />
         <div className="min-w-0 flex-1">
           <span className="text-sm font-semibold block">{wallet.name}</span>
           <span className="text-xs text-muted block mt-0.5 line-clamp-1 sm:line-clamp-2 leading-snug">

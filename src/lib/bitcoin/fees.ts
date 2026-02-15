@@ -1,4 +1,4 @@
-import type { MempoolTransaction, MempoolBlock } from "@/lib/api/types";
+import type { MempoolTransaction, MempoolBlock, MempoolInfo } from "@/lib/api/types";
 import type { CpfpCandidate } from "@/lib/diagnosis/types";
 import { TxFixError, ErrorCode } from "@/lib/errors";
 import { ESTIMATED_CHILD_VSIZES, DEFAULT_CHILD_VSIZE } from "./constants";
@@ -71,6 +71,26 @@ export function estimateBlocksToConfirm(
     if (feeRate >= minFee) return i + 1;
   }
 
-  // Beyond projected blocks -very stuck
+  // Beyond projected blocks - very stuck
   return mempoolBlocks.length + 6;
+}
+
+/**
+ * Estimate how many blocks until confirmation based on actual mempool queue depth.
+ * Uses fee_histogram to measure how much vsize is ahead of this fee rate.
+ */
+export function estimateBlocksFromPosition(
+  feeRate: number,
+  mempoolInfo: MempoolInfo,
+): number {
+  let vsizeAhead = 0;
+  for (const [histFeeRate, histVsize] of mempoolInfo.fee_histogram) {
+    if (histFeeRate > feeRate) {
+      vsizeAhead += histVsize;
+    } else {
+      break; // histogram is sorted descending
+    }
+  }
+  if (vsizeAhead === 0) return 1;
+  return Math.ceil(vsizeAhead / 1_000_000) + 1; // ~1 MvB per block
 }

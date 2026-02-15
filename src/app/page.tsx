@@ -20,12 +20,18 @@ import { truncateTxid } from "@/lib/bitcoin/format";
 import { getWalletById } from "@/lib/wallets/data";
 import { resolveGuide } from "@/lib/wallets/resolveGuide";
 import { useKeyboardNav } from "@/hooks/useKeyboardNav";
+import { useDevMode } from "@/hooks/useDevMode";
+import { DevPanel } from "@/components/DevPanel";
 
 type FixMethod = "RBF" | "CPFP";
 
 export default function Home() {
   const { txid, method: fixMethod, walletId: selectedWalletId, setTxid, setMethod, setWallet, setMethodAndWallet } = useUrlState();
-  const diagnosis = useDiagnosis(txid);
+  const realDiagnosis = useDiagnosis(txid);
+  const devMode = useDevMode();
+
+  // Dev mode overrides real diagnosis when a scenario is active
+  const diagnosis = devMode.mockDiagnosis ?? realDiagnosis;
 
   // Ephemeral state (not shareable via URL)
   const [broadcastedTxid, setBroadcastedTxid] = useState<string | null>(null);
@@ -94,6 +100,19 @@ export default function Home() {
     [setMethod, setMethodAndWallet, selectedWalletId],
   );
 
+  const handleDevActivate = useCallback(
+    (scenarioId: string) => {
+      devMode.activate(scenarioId);
+      const scenario = devMode.scenarios.find((s) => s.id === scenarioId);
+      if (scenario) {
+        setBroadcastedTxid(null);
+        setConfirmed(false);
+        setTxid(scenario.txid);
+      }
+    },
+    [devMode, setTxid],
+  );
+
   const handleBroadcasted = useCallback((newTxid: string) => {
     setBroadcastedTxid(newTxid);
   }, []);
@@ -106,8 +125,9 @@ export default function Home() {
     setBroadcastedTxid(null);
     setConfirmed(false);
     setTxid(null);
-    diagnosis.reset();
-  }, [setTxid, diagnosis]);
+    realDiagnosis.reset();
+    devMode.deactivate();
+  }, [setTxid, realDiagnosis, devMode]);
 
   // Global keyboard navigation (Backspace / Escape to go back)
   const isTrackerOrReceipt = broadcastedTxid !== null || confirmed;
@@ -394,6 +414,14 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DevPanel
+        visible={devMode.panelVisible}
+        scenarios={devMode.scenarios}
+        activeScenarioId={devMode.activeScenario?.id ?? null}
+        onActivate={handleDevActivate}
+        onClose={devMode.deactivate}
+      />
     </div>
   );
 }

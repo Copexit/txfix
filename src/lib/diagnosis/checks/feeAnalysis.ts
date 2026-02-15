@@ -6,17 +6,16 @@ import { formatFeeRate } from "@/lib/bitcoin/format";
 export function checkFeeAdequacy(
   tx: MempoolTransaction,
   fees: RecommendedFees,
-  mempoolBlocks: MempoolBlock[],
+  _mempoolBlocks: MempoolBlock[],
 ): CheckResult {
   const feeRate = getEffectiveFeeRate(tx);
-  const nextBlockMin =
-    mempoolBlocks.length > 0 ? mempoolBlocks[0].feeRange[0] ?? fees.fastestFee : fees.fastestFee;
+  const nextBlockTarget = fees.fastestFee;
 
-  if (feeRate >= nextBlockMin) {
+  if (feeRate >= nextBlockTarget) {
     return {
       id: "fee-analysis",
       label: `Fee rate: ${formatFeeRate(feeRate)}`,
-      detail: `At or above next-block minimum (${formatFeeRate(nextBlockMin)})`,
+      detail: `At or above next-block target (${formatFeeRate(nextBlockTarget)})`,
       status: "pass",
       icon: "\u2713",
     };
@@ -26,7 +25,7 @@ export function checkFeeAdequacy(
     return {
       id: "fee-analysis",
       label: `Fee rate: ${formatFeeRate(feeRate)}`,
-      detail: `Below next-block target (${formatFeeRate(nextBlockMin)}) but within hourly range`,
+      detail: `Below next-block target (${formatFeeRate(nextBlockTarget)}) but within hourly range`,
       status: "warn",
       icon: "\u26A0",
     };
@@ -35,7 +34,7 @@ export function checkFeeAdequacy(
   return {
     id: "fee-analysis",
     label: `Fee rate: ${formatFeeRate(feeRate)}`,
-    detail: `Well below next-block minimum of ${formatFeeRate(nextBlockMin)}`,
+    detail: `Well below next-block target of ${formatFeeRate(nextBlockTarget)}`,
     status: "fail",
     icon: "\u2717",
   };

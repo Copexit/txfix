@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# screenshots & temp assets
+*.png
+!public/**/*.png
+/screenshots/
+/raw-icons/
+
+# claude local state
+.claude/agent-memory/
+.claude/settings.local.json
+
+# playwright
+.playwright-mcp/

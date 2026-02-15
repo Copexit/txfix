@@ -13,6 +13,7 @@ import { AcceleratorFallback } from "./AcceleratorFallback";
 import { Card } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
+import { WalletAvatar } from "./ui/WalletAvatar";
 
 interface WalletGuideProps {
   guide: ResolvedGuide;
@@ -80,8 +81,13 @@ export function WalletGuide({
     >
       <Card accent="bitcoin" className="space-y-4">
         <div className="flex items-center gap-3">
-          <Badge variant="success">{guide.method}</Badge>
+          <WalletAvatar
+            walletId={guide.wallet.id}
+            walletName={guide.wallet.name}
+            size={24}
+          />
           <h3 className="font-semibold">{guide.wallet.name}</h3>
+          <Badge variant="success">{guide.method}</Badge>
         </div>
 
         {/* Caveat shown upfront before steps */}
@@ -259,8 +265,13 @@ function PsbtView({
     >
       <Card accent="bitcoin" className="space-y-3">
         <div className="flex items-center gap-3">
-          <Badge variant="success">{guide.method}</Badge>
+          <WalletAvatar
+            walletId={guide.wallet.id}
+            walletName={guide.wallet.name}
+            size={24}
+          />
           <h3 className="font-semibold">{guide.wallet.name}</h3>
+          <Badge variant="success">{guide.method}</Badge>
         </div>
         <p className="text-muted text-sm">
           TxFix will generate a{" "}
@@ -347,6 +358,11 @@ function UnsupportedView({
   const otherAvailable =
     otherMethod === "RBF" ? verdict.canRbf : verdict.canCpfp;
 
+  // Check if the wallet actually supports the other method
+  const otherWalletGuide = guide.method === "RBF" ? guide.wallet.cpfp : guide.wallet.rbf;
+  const otherWalletSupported = otherWalletGuide.support !== "none";
+  const canSwitchMethod = otherAvailable && otherWalletSupported;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -355,9 +371,16 @@ function UnsupportedView({
       className="space-y-4"
     >
       <Card accent="warning" className="space-y-3">
-        <h3 className="font-semibold">
-          {guide.wallet.name} doesn&apos;t support {guide.method}
-        </h3>
+        <div className="flex items-center gap-3">
+          <WalletAvatar
+            walletId={guide.wallet.id}
+            walletName={guide.wallet.name}
+            size={24}
+          />
+          <h3 className="font-semibold">
+            {guide.wallet.name} doesn&apos;t support {guide.method}
+          </h3>
+        </div>
         <p className="text-muted text-sm leading-relaxed">
           Unfortunately, {guide.wallet.name} cannot perform{" "}
           {guide.method === "RBF"
@@ -373,7 +396,7 @@ function UnsupportedView({
         )}
 
         <div className="space-y-2 pt-1">
-          {otherAvailable && (
+          {canSwitchMethod && (
             <Button
               variant="primary"
               size="sm"
@@ -393,7 +416,7 @@ function UnsupportedView({
         </div>
       </Card>
 
-      {!otherAvailable && <AcceleratorFallback txid={txid} />}
+      {!canSwitchMethod && <AcceleratorFallback txid={txid} />}
 
       <div className="flex gap-4">
         <button

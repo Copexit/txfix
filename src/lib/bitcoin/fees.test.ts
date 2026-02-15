@@ -4,8 +4,9 @@ import {
   calculateRbfCost,
   calculateCpfpCost,
   estimateBlocksToConfirm,
+  estimateBlocksFromPosition,
 } from "./fees";
-import { makeTx, MEMPOOL_BLOCKS } from "@/lib/__testdata__/fixtures";
+import { makeTx, MEMPOOL_BLOCKS, MEMPOOL_INFO } from "@/lib/__testdata__/fixtures";
 
 // ── getEffectiveFeeRate ──────────────────────────────────────────────────────
 
@@ -114,5 +115,39 @@ describe("estimateBlocksToConfirm", () => {
     expect(estimateBlocksToConfirm(0.1, MEMPOOL_BLOCKS)).toBe(
       MEMPOOL_BLOCKS.length + 6,
     );
+  });
+});
+
+// ── estimateBlocksFromPosition ───────────────────────────────────────────────
+
+describe("estimateBlocksFromPosition", () => {
+  it("returns 1 when fee is above all histogram entries", () => {
+    // MEMPOOL_INFO histogram: [100, 50, 20, 10, 5, 1] - fee 200 is above all
+    expect(estimateBlocksFromPosition(200, MEMPOOL_INFO)).toBe(1);
+  });
+
+  it("returns correct block count for mid-range fee", () => {
+    // Fee rate 10: entries above 10 are [100, 500k], [50, 2M], [20, 10M]
+    // vsizeAhead = 500k + 2M + 10M = 12.5M
+    // blocks = ceil(12.5M / 1M) + 1 = 13 + 1 = 14
+    expect(estimateBlocksFromPosition(10, MEMPOOL_INFO)).toBe(14);
+  });
+
+  it("returns high count for very low fee with large queue", () => {
+    // Fee rate 0.1: all entries are above -> total = 500k + 2M + 10M + 50M + 80M + 57.5M = 200M
+    // blocks = ceil(200M / 1M) + 1 = 200 + 1 = 201
+    expect(estimateBlocksFromPosition(0.1, MEMPOOL_INFO)).toBe(201);
+  });
+
+  it("handles empty histogram", () => {
+    const emptyInfo = { count: 0, vsize: 0, total_fee: 0, fee_histogram: [] as [number, number][] };
+    expect(estimateBlocksFromPosition(10, emptyInfo)).toBe(1);
+  });
+
+  it("returns correct estimate for fee between histogram entries", () => {
+    // Fee rate 30: entries above 30 are [100, 500k], [50, 2M]
+    // vsizeAhead = 500k + 2M = 2.5M
+    // blocks = ceil(2.5M / 1M) + 1 = 3 + 1 = 4
+    expect(estimateBlocksFromPosition(30, MEMPOOL_INFO)).toBe(4);
   });
 });

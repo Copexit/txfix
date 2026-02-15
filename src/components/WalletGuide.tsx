@@ -182,11 +182,14 @@ export function WalletGuide({
           ) : (
             <div className="mt-2">
               <p className="text-muted text-xs mb-3">
-                Paste the replacement transaction ID from your wallet so TxFix
-                can track it. Check your wallet&apos;s transaction details for
-                the new TXID.
+                Paste the new transaction ID from{" "}
+                <strong className="text-foreground">{guide.wallet.name}</strong>{" "}
+                to track confirmation.
               </p>
-              <BroadcastInput onBroadcasted={onBroadcasted} />
+              <BroadcastInput
+                onBroadcasted={onBroadcasted}
+                variant="txid-only"
+              />
               <button
                 onClick={() => setShowBroadcast(false)}
                 className="inline-flex items-center gap-1.5 mt-2 text-muted text-xs hover:text-foreground transition-colors cursor-pointer"

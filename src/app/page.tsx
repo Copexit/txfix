@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { useUrlState } from "@/hooks/useUrlState";
@@ -13,6 +13,7 @@ import { WalletSelector } from "@/components/WalletSelector";
 import { WalletGuide } from "@/components/WalletGuide";
 import { LiveTracker } from "@/components/LiveTracker";
 import { RescueReceipt } from "@/components/RescueReceipt";
+import { TimelineStep } from "@/components/TimelineStep";
 import { Button } from "@/components/ui/Button";
 import { TxFixError } from "@/lib/errors";
 import { truncateTxid } from "@/lib/bitcoin/format";
@@ -22,38 +23,6 @@ import { useKeyboardNav } from "@/hooks/useKeyboardNav";
 
 type FixMethod = "RBF" | "CPFP";
 
-function FlowBreadcrumbs({
-  txid,
-  fixMethod,
-  selectedWalletId,
-  broadcastedTxid,
-}: {
-  txid: string | null;
-  fixMethod: FixMethod | null;
-  selectedWalletId: string | null;
-  broadcastedTxid: string | null;
-}) {
-  const steps = [
-    { label: "Diagnose", active: !!txid },
-    { label: "Fix", active: !!fixMethod },
-    { label: "Guide", active: !!selectedWalletId },
-    { label: "Track", active: !!broadcastedTxid },
-  ];
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs text-muted">
-      {steps.map((step, i) => (
-        <span key={step.label} className="flex items-center gap-1.5">
-          {i > 0 && <span className="text-card-border">/</span>}
-          <span className={step.active ? "text-bitcoin font-semibold" : ""}>
-            {step.label}
-          </span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default function Home() {
   const { txid, method: fixMethod, walletId: selectedWalletId, setTxid, setMethod, setWallet, setMethodAndWallet } = useUrlState();
   const diagnosis = useDiagnosis(txid);
@@ -61,6 +30,7 @@ export default function Home() {
   // Ephemeral state (not shareable via URL)
   const [broadcastedTxid, setBroadcastedTxid] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   // Derive resolved guide from URL params + diagnosis data
   const resolvedGuide = useMemo(() => {
@@ -78,7 +48,6 @@ export default function Home() {
       selectedWalletId &&
       !resolvedGuide
     ) {
-      // Invalid wallet ID or broken state - fall back to verdict
       setMethod(null);
     }
   }, [diagnosis.phase, fixMethod, selectedWalletId, resolvedGuide, setMethod]);
@@ -117,7 +86,6 @@ export default function Home() {
   const handleSwitchMethod = useCallback(
     (method: FixMethod) => {
       if (selectedWalletId) {
-        // Keep same wallet, just switch method (single URL push)
         setMethodAndWallet(method, selectedWalletId);
       } else {
         setMethod(method);
@@ -177,40 +145,59 @@ export default function Home() {
   const isLoading =
     diagnosis.phase === "fetching" || diagnosis.phase === "diagnosing";
   const showHero = !txid;
-  const showDiagnosis = !!txid && diagnosis.steps.length > 0;
-  const showVerdict =
-    diagnosis.phase === "complete" &&
-    diagnosis.verdict !== null &&
-    !fixMethod &&
-    !broadcastedTxid;
-  const showWalletSelect =
-    fixMethod !== null &&
-    selectedWalletId === null &&
-    !broadcastedTxid;
-  const showWalletGuide =
-    fixMethod !== null &&
-    resolvedGuide !== null &&
-    !broadcastedTxid;
-  const showTracker = broadcastedTxid !== null && !confirmed;
-  const showReceipt = confirmed && broadcastedTxid !== null;
   const showError = diagnosis.phase === "error";
 
-  // Derive current phase key for page transitions
-  const currentPhase = showHero
-    ? "hero"
-    : showReceipt
-      ? "receipt"
-      : showTracker
-        ? "tracker"
-        : showWalletGuide
-          ? "guide"
-          : showWalletSelect
-            ? "wallet-select"
-            : showVerdict
-              ? "verdict"
-              : showError
-                ? "error"
-                : "diagnosis";
+  // Timeline state: "reached" = this step has been activated at some point
+  const reachedDiagnosis = !!txid;
+  const reachedVerdict = diagnosis.phase === "complete" && diagnosis.verdict !== null;
+  const reachedWalletSelect = !!fixMethod;
+  const reachedGuide = !!selectedWalletId && resolvedGuide !== null;
+  const reachedTracker = !!broadcastedTxid;
+
+  // "active" = this is the step the user is currently on
+  const activeDiagnosis = reachedDiagnosis && !reachedVerdict && !showError;
+  const activeVerdict = reachedVerdict && !reachedWalletSelect && !broadcastedTxid;
+  const activeWalletSelect = reachedWalletSelect && !reachedGuide && !broadcastedTxid;
+  const activeGuide = reachedGuide && !reachedTracker;
+  const activeTracker = reachedTracker;
+
+  // Summary text for collapsed steps
+  const diagnosisSummary = diagnosis.steps.length > 0
+    ? `${diagnosis.steps.length} ${diagnosis.steps.length === 1 ? "check" : "checks"} completed`
+    : undefined;
+
+  const verdictSummary = diagnosis.verdict
+    ? `${diagnosis.verdict.severity} - ${diagnosis.verdict.headline}`
+    : undefined;
+
+  const walletName = selectedWalletId ? getWalletById(selectedWalletId)?.name : null;
+  const walletSelectSummary = walletName
+    ? `${walletName} - ${fixMethod}`
+    : fixMethod
+      ? `${fixMethod} selected`
+      : undefined;
+
+  const guideSummary = resolvedGuide
+    ? `${resolvedGuide.steps.length} steps - ${resolvedGuide.method}`
+    : undefined;
+
+  // Auto-scroll to active step when it changes
+  const prevPhaseRef = useRef<string | null>(null);
+  const currentActivePhase = activeTracker ? "tracker" : activeGuide ? "guide" : activeWalletSelect ? "wallet" : activeVerdict ? "verdict" : activeDiagnosis ? "diagnosis" : null;
+
+  useEffect(() => {
+    if (currentActivePhase && currentActivePhase !== prevPhaseRef.current) {
+      prevPhaseRef.current = currentActivePhase;
+      // Small delay to let the DOM render the new step
+      const timer = setTimeout(() => {
+        const activeEl = document.querySelector("[data-timeline-active]");
+        if (activeEl) {
+          activeEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [currentActivePhase]);
 
   return (
     <div
@@ -243,133 +230,167 @@ export default function Home() {
             </p>
           </motion.div>
         ) : (
-          /* -- Diagnosis Flow ----------------------------------------------- */
+          /* -- Rescue Timeline ---------------------------------------------- */
           <motion.div
-            key={currentPhase}
+            key="timeline"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto space-y-6 pt-2 sm:pt-4 pb-8"
+            ref={timelineRef}
+            className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto space-y-1 pt-2 sm:pt-4 pb-8"
           >
-            {/* TXID header with back button and breadcrumbs */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleReset}
-                  className="text-muted hover:text-foreground transition-colors cursor-pointer"
-                  aria-label="Go back to home"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-                {txid && (
-                  <p className="text-muted text-sm font-mono truncate flex-1">
-                    {truncateTxid(txid, 16)}
-                  </p>
-                )}
-              </div>
-              <FlowBreadcrumbs
-                txid={txid}
-                fixMethod={fixMethod}
-                selectedWalletId={selectedWalletId}
-                broadcastedTxid={broadcastedTxid}
-              />
+            {/* TXID header with back button */}
+            <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={handleReset}
+                className="text-muted hover:text-foreground transition-colors cursor-pointer"
+                aria-label="Go back to home"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              {txid && (
+                <p className="text-muted text-sm font-mono truncate shrink-0 hidden sm:block">
+                  {truncateTxid(txid, 16)}
+                </p>
+              )}
+              <TxInput onSubmit={handleSubmit} isLoading={isLoading} compact />
             </div>
 
-            {/* Diagnostic steps - hide once verdict is ready */}
-            {showDiagnosis &&
-              !showVerdict &&
-              !showWalletSelect &&
-              !showWalletGuide &&
-              !showTracker &&
-              !showReceipt && (
-                <DiagnosticSequence
-                  steps={diagnosis.steps}
-                  isRunning={isLoading}
-                />
+            {/* Timeline steps */}
+            <div className="space-y-0">
+              {/* Step 1: Diagnosis */}
+              {reachedDiagnosis && (
+                <TimelineStep
+                  step={1}
+                  label="Diagnose"
+                  completed={reachedVerdict}
+                  active={activeDiagnosis}
+                  loading={isLoading}
+                  summary={diagnosisSummary}
+                  isLast={!reachedVerdict && !showError}
+                >
+                  <DiagnosticSequence
+                    steps={diagnosis.steps}
+                    isRunning={isLoading}
+                  />
+                </TimelineStep>
               )}
 
-            {/* Verdict */}
-            {showVerdict && diagnosis.verdict && (
-              <div className="space-y-3">
-                <VerdictCard verdict={diagnosis.verdict} onFix={handleFix} />
-                {diagnosis.verdict.showAcceleratorFallback && txid && (
-                  <AcceleratorFallback txid={txid} />
+              {/* Error state */}
+              {showError && diagnosis.error && (
+                <div className="pl-11 pb-4">
+                  <div className="bg-danger/10 border border-danger/30 rounded-xl p-4 space-y-3">
+                    <p className="text-danger font-medium text-sm">
+                      {diagnosis.error instanceof TxFixError
+                        ? diagnosis.error.userMessage
+                        : "Something went wrong. Please try again."}
+                    </p>
+                    <Button variant="secondary" size="sm" onClick={handleReset}>
+                      Try again
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Verdict */}
+              {reachedVerdict && diagnosis.verdict && (
+                <TimelineStep
+                  step={2}
+                  label="Verdict"
+                  completed={reachedWalletSelect}
+                  active={activeVerdict}
+                  summary={verdictSummary}
+                  isLast={!reachedWalletSelect}
+                >
+                  <div className="space-y-3">
+                    <VerdictCard verdict={diagnosis.verdict} onFix={handleFix} />
+                    {diagnosis.verdict.showAcceleratorFallback && txid && (
+                      <AcceleratorFallback txid={txid} />
+                    )}
+                  </div>
+                </TimelineStep>
+              )}
+
+              {/* Step 3: Wallet Selection */}
+              {reachedWalletSelect && (
+                <TimelineStep
+                  step={3}
+                  label="Wallet"
+                  completed={reachedGuide}
+                  active={activeWalletSelect}
+                  summary={walletSelectSummary}
+                  isLast={!reachedGuide}
+                >
+                  <WalletSelector
+                    onSelect={handleWalletSelect}
+                    onCancel={handleCancelFix}
+                  />
+                </TimelineStep>
+              )}
+
+              {/* Step 4: Wallet Guide */}
+              {reachedGuide &&
+                resolvedGuide &&
+                fixMethod &&
+                diagnosis.txData &&
+                diagnosis.rawTxHex &&
+                diagnosis.verdict &&
+                txid && (
+                  <TimelineStep
+                    step={4}
+                    label="Instructions"
+                    completed={reachedTracker}
+                    active={activeGuide}
+                    summary={guideSummary}
+                    isLast={!reachedTracker}
+                  >
+                    <WalletGuide
+                      guide={resolvedGuide}
+                      verdict={diagnosis.verdict}
+                      txData={diagnosis.txData}
+                      txHex={diagnosis.rawTxHex}
+                      cpfpCandidates={diagnosis.cpfpCandidates}
+                      txid={txid}
+                      onBroadcasted={handleBroadcasted}
+                      onCancel={handleCancelFix}
+                      onChangeWallet={handleChangeWallet}
+                      onSwitchMethod={handleSwitchMethod}
+                    />
+                  </TimelineStep>
                 )}
-              </div>
-            )}
 
-            {/* Wallet Selection */}
-            {showWalletSelect && (
-              <WalletSelector
-                onSelect={handleWalletSelect}
-                onCancel={handleCancelFix}
-              />
-            )}
-
-            {/* Wallet Guide */}
-            {showWalletGuide &&
-              resolvedGuide &&
-              fixMethod &&
-              diagnosis.txData &&
-              diagnosis.rawTxHex &&
-              diagnosis.verdict &&
-              txid && (
-                <WalletGuide
-                  guide={resolvedGuide}
-                  verdict={diagnosis.verdict}
-                  txData={diagnosis.txData}
-                  txHex={diagnosis.rawTxHex}
-                  cpfpCandidates={diagnosis.cpfpCandidates}
-                  txid={txid}
-                  onBroadcasted={handleBroadcasted}
-                  onCancel={handleCancelFix}
-                  onChangeWallet={handleChangeWallet}
-                  onSwitchMethod={handleSwitchMethod}
-                />
+              {/* Step 5: Track / Receipt */}
+              {reachedTracker && broadcastedTxid && txid && (
+                <TimelineStep
+                  step={5}
+                  label="Track"
+                  completed={confirmed}
+                  active={activeTracker}
+                  summary={confirmed ? "Confirmed!" : "Tracking..."}
+                  isLast
+                >
+                  {confirmed && diagnosis.verdict && fixMethod ? (
+                    <RescueReceipt
+                      originalTxid={txid}
+                      replacementTxid={broadcastedTxid}
+                      method={fixMethod}
+                      feePaidSats={
+                        diagnosis.verdict.recommendations.find(
+                          (r) => r.method === fixMethod,
+                        )?.costSats ?? 0
+                      }
+                      btcPrice={diagnosis.btcPrice}
+                    />
+                  ) : (
+                    <LiveTracker
+                      txid={broadcastedTxid}
+                      originalTxid={txid}
+                      onConfirmed={handleConfirmed}
+                    />
+                  )}
+                </TimelineStep>
               )}
-
-            {/* Live Tracker */}
-            {showTracker && broadcastedTxid && txid && (
-              <LiveTracker
-                txid={broadcastedTxid}
-                originalTxid={txid}
-                onConfirmed={handleConfirmed}
-              />
-            )}
-
-            {/* Rescue Receipt */}
-            {showReceipt &&
-              broadcastedTxid &&
-              txid &&
-              diagnosis.verdict &&
-              fixMethod && (
-                <RescueReceipt
-                  originalTxid={txid}
-                  replacementTxid={broadcastedTxid}
-                  method={fixMethod}
-                  feePaidSats={
-                    diagnosis.verdict.recommendations.find(
-                      (r) => r.method === fixMethod,
-                    )?.costSats ?? 0
-                  }
-                  btcPrice={diagnosis.btcPrice}
-                />
-              )}
-
-            {/* Error */}
-            {showError && diagnosis.error && (
-              <div className="bg-danger/10 border border-danger/30 rounded-xl p-4 space-y-3">
-                <p className="text-danger font-medium text-sm">
-                  {diagnosis.error instanceof TxFixError
-                    ? diagnosis.error.userMessage
-                    : "Something went wrong. Please try again."}
-                </p>
-                <Button variant="secondary" size="sm" onClick={handleReset}>
-                  Try again
-                </Button>
-              </div>
-            )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

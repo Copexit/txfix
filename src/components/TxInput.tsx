@@ -50,7 +50,7 @@ export function TxInput({ onSubmit, isLoading, compact = false }: TxInputProps) 
 
   if (compact) {
     return (
-      <form onSubmit={handleSubmit} className="w-full">
+      <form onSubmit={handleSubmit} className="flex-1 min-w-0">
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -65,7 +65,7 @@ export function TxInput({ onSubmit, isLoading, compact = false }: TxInputProps) 
             spellCheck={false}
             autoComplete="off"
             aria-describedby={error ? "txid-error" : undefined}
-            className={`flex-1 bg-card-bg border rounded-lg px-3 py-2
+            className={`flex-1 min-w-0 bg-card-bg border rounded-lg px-3 py-2
               font-mono text-sm text-foreground placeholder:text-muted/50
               focus:outline-none focus:border-bitcoin focus:ring-1 focus:ring-bitcoin/30
               transition-all duration-200
@@ -74,7 +74,7 @@ export function TxInput({ onSubmit, isLoading, compact = false }: TxInputProps) 
           <button
             type="submit"
             disabled={isLoading || !value.trim()}
-            className="px-4 py-2 bg-bitcoin text-black font-semibold text-sm rounded-lg
+            className="shrink-0 px-4 py-2 bg-bitcoin text-black font-semibold text-sm rounded-lg
               hover:bg-bitcoin-hover transition-all duration-150 disabled:opacity-50
               disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
           >

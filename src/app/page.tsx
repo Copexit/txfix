@@ -23,6 +23,7 @@ import { SponsorCta } from "@/components/SponsorCta";
 import { useKeyboardNav } from "@/hooks/useKeyboardNav";
 import { useDevMode } from "@/hooks/useDevMode";
 import { DevPanel } from "@/components/DevPanel";
+import { TipToast } from "@/components/TipToast";
 
 type FixMethod = "RBF" | "CPFP";
 
@@ -417,6 +418,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      <TipToast />
       <DevPanel
         visible={devMode.panelVisible}
         scenarios={devMode.scenarios}
